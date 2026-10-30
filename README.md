@@ -7,7 +7,7 @@ Standalone Telegram bot backend for the independent RIDDLOVA game brand. No othe
 - 11 UI language preferences and translated essential bot onboarding
 - /start, /play, /daily, /lang, /stats, /invite, /notify, /stop, /privacy, /forget, /paysupport, /support
 - Profile name, description, command menu, public Mini App launcher, avatar via Telegram Bot API 10.3
-- One-time RIDDLOVA+ pack: 10 expert games unlocked by 25 Telegram Stars (XTR)
+- One-time RIDDLOVA+ pack: 10 new daily expert games unlocked by 199 Telegram Stars (XTR)
 - Verified pre_checkout_query, successful_payment charge-id deduplication, SQLite entitlement
 - Channel post only when configured with an owned channel whose title includes RIDDLOVA; at most once a day
 - Voluntary daily opt-in alerts, no unsolicited messages
