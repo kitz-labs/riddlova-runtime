@@ -54,10 +54,22 @@ async function api(method,args={},timeout=40000){
 }
 const say=(chat,text,markup)=>api("sendMessage",{chat_id:chat,text,disable_web_page_preview:true,...(markup?{reply_markup:markup}:{})});
 const playMarkup=()=>({inline_keyboard:[[{text:"🎮 OPEN RIDDLOVA",web_app:{url:WEB_URL}}],[{text:"↗ SHARE CHALLENGE",url:"https://t.me/share/url?url="+encodeURIComponent(WEB_URL)+"&text="+encodeURIComponent("RIDDLOVA – Play my daily brain challenge!")}]]});
-async function onboard(bot){await api("setMyName",{name:"RIDDLOVA | Brain Arena"});await api("setMyShortDescription",{short_description:"Daily brain games, logic, memory & speed. Free worldwide challenges. 🌍"});await api("setMyDescription",{description:"RIDDLOVA is a global brain arena with four fast, free mini games. Play in 11 languages, challenge friends and beat your personal record. No gambling, no cash rewards. Use /play to start, /help for commands."});await api("setMyCommands",{commands:[{command:"play",description:"Open the brain games"},{command:"daily",description:"Today's mission"},{command:"premium",description:"Play expert puzzles (if unlocked)"},{command:"shop",description:"Explore Stars challenge packs"},{command:"stats",description:"My game stats"},{command:"invite",description:"Invite friends"},{command:"lang",description:"Choose language"},{command:"notify",description:"Opt in to daily reminder"},{command:"stop",description:"Stop reminders"},{command:"paysupport",description:"Payment support"},{command:"forget",description:"Delete profile"}]});
- await api("setChatMenuButton",{menu_button:{type:"web_app",text:"PLAY 🎮",web_app:{url:WEB_URL}}});
- // Bot API 10.3: profile photo may be set by the bot itself; failure here is nonfatal.
- try{const p=resolve(HERE,"assets","riddlova-avatar.png");if(existsSync(p)){const form=new FormData();form.append("photo",JSON.stringify({type:"static",photo:"attach://avatar"}));form.append("avatar",new Blob([readFileSync(p)],{type:"image/png"}),"avatar.png");const r=await fetch("https://api.telegram.org/bot"+TOKEN+"/setMyProfilePhoto",{method:"POST",body:form,signal:AbortSignal.timeout(15000)});if(!r.ok)console.log("Profile image not updated; use BotFather as fallback");}}catch{console.log("Profile image not updated; use BotFather as fallback")}
+async function optionalSetup(method,params){try{await api(method,params)}catch(e){console.log("Optional bot setup skipped: "+method)}}
+async function onboard(){
+ await optionalSetup("setMyName",{name:"RIDDLOVA | Brain Arena"});
+ await optionalSetup("setMyShortDescription",{short_description:"Daily brain games, logic, memory & speed. Free worldwide challenges. 🌍"});
+ await optionalSetup("setMyDescription",{description:"RIDDLOVA is a global brain arena with four fast, free mini games. Play in 11 languages, challenge friends and beat your personal record. No gambling, no cash rewards. Use /play to start, /help for commands."});
+ await optionalSetup("setMyCommands",{commands:[{command:"play",description:"Open the brain games"},{command:"daily",description:"Today's mission"},{command:"premium",description:"Expert challenges"},{command:"shop",description:"Stars challenge packs"},{command:"stats",description:"My game stats"},{command:"invite",description:"Invite friends"},{command:"lang",description:"Choose language"},{command:"notify",description:"Opt in to daily reminder"},{command:"stop",description:"Stop reminders"},{command:"paysupport",description:"Payment support"},{command:"forget",description:"Delete profile"}]});
+ await optionalSetup("setChatMenuButton",{menu_button:{type:"web_app",text:"PLAY 🎮",web_app:{url:WEB_URL}}});
+ try{
+  const file=resolve(HERE,"assets","riddlova-avatar.png");
+  if(existsSync(file)){
+   const form=new FormData();form.append("photo",JSON.stringify({type:"static",photo:"attach://avatar"}));
+   form.append("avatar",new Blob([readFileSync(file)],{type:"image/png"}),"avatar.png");
+   const response=await fetch("https://api.telegram.org/bot"+TOKEN+"/setMyProfilePhoto",{method:"POST",body:form,signal:AbortSignal.timeout(15000)});
+   if(!response.ok)console.log("Bot avatar not updated; Telegram setup can retry");
+  }
+ }catch{console.log("Bot avatar update skipped")}
 }
 function referralCode(user){return createHmac("sha256",TOKEN).update("riddlova-ref-"+user).digest("hex").slice(0,12)}
 async function start(user,chat,ref=""){const lang=upsert(user);const own=referralCode(user.id);db.prepare("INSERT OR IGNORE INTO referrals(code,owner) VALUES(?,?)").run(own,user.id);
@@ -98,7 +110,14 @@ async function handlePrecheck(q){const valid=SHOP&&q.currency==="XTR"&&q.total_a
 async function tickChannel(){if(!CHANNEL||!TOKEN)return;const last=db.prepare("SELECT value FROM meta WHERE key='channel_day'").get()?.value;if(last===utc())return;const hour=new Date().getUTCHours();if(hour<9)return;
  const chat=await api("getChat",{chat_id:CHANNEL});if(chat.type!=="channel"||!String(chat.title||"").toLowerCase().includes("riddlova")){console.log("Channel does not match RIDDLOVA, no posts sent");return;}
  const msg="🧠 RIDDLOVA — DAILY BRAIN ARENA\n\n🌍 New global challenge for "+utc()+" (UTC)\n⚡ Logic · Numbers · Memory · Reflex\n\nPlay for free and share your score with a friend. No downloads needed.\n\n"+WEB_URL;
- await say(CHANNEL,msg,{inline_keyboard:[[{text:"🎮 PLAY THE DAILY CHALLENGE",url:WEB_URL}]]});db.prepare("INSERT INTO meta(key,value) VALUES('channel_day',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(utc());
+ const keyboard={inline_keyboard:[[{text:"🎮 PLAY THE DAILY CHALLENGE",url:WEB_URL}]]};
+ const photo=WEB_URL+"assets/social-card.png";
+ try{
+  const head=await fetch(photo,{method:"HEAD",signal:AbortSignal.timeout(5000)});
+  if(head.ok)await api("sendPhoto",{chat_id:CHANNEL,photo,caption:msg,reply_markup:keyboard});
+  else await say(CHANNEL,msg,keyboard);
+ }catch(e){console.error("Channel photo unavailable; channel post will retry later");return;}
+ db.prepare("INSERT INTO meta(key,value) VALUES('channel_day',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(utc());
 }
 async function tickNotify(){if(!TOKEN)return;const day=utc();if(new Date().getUTCHours()<10)return;const last=db.prepare("SELECT value FROM meta WHERE key='notify_day'").get()?.value;if(last===day)return;
  const users=db.prepare("SELECT id,language FROM users WHERE notify=1 ORDER BY id LIMIT 300").all();
