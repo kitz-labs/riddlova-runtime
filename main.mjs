@@ -12,7 +12,7 @@ import {fileURLToPath} from "node:url";
 
 const HERE=dirname(fileURLToPath(import.meta.url));
 const TOKEN=process.env.TELEGRAM_BOT_TOKEN||"";
-const WEB_URL=process.env.RIDDLOVA_WEB_URL||"https://kitz-labs.github.io/riddlova-arena/";
+const WEB_URL=process.env.RIDDLOVA_WEB_URL||"https://riddlova.surge.sh/";
 const CHANNEL=process.env.RIDDLOVA_CHANNEL_ID||"";
 const ADMIN=process.env.RIDDLOVA_ADMIN_CHAT_ID||"";
 const SHOP=process.env.RIDDLOVA_ENABLE_STARS==="1"&&!!TOKEN&&!!ADMIN;

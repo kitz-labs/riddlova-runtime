@@ -28,7 +28,7 @@ The bot token must be stored in a protected VPS runtime environment under the so
 Run with Node 24 or newer and an isolated PM2 process. The bot and channel must remain disconnected until valid credentials have been installed. No sensitive logs. Use HTTPS for the public game UI, Telegram polling for bot updates, SQLite for purchases and opt-in reminders. Never run under an account belonging to another project. Payments for digital goods inside Telegram use only Stars (XTR); there is no guarantee of EUR conversion or payouts. Users can submit /paysupport requests and exercise /forget; legally required transaction data may need to be retained.
 
 ## Current public Mini App
-https://kitz-labs.github.io/riddlova-arena/
+https://riddlova.surge.sh/
 
 ## Start and tests
 npm test
